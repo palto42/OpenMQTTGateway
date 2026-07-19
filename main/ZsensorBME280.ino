@@ -92,7 +92,7 @@ void setupZsensorBME280() {
   mySensor.settings.tempOverSample = BME280TemperatureOversample;
 
   // pressOverSample - Values:
-  // -------------------------
+  // -------------------------Untitled Sketc
   //  0, skipped
   //  1 through 5, oversampling *1, *2, *4, *8, *16 respectively
   mySensor.settings.pressOverSample = BME280PressureOversample;
@@ -130,6 +130,7 @@ void MeasureTempHumAndPressure() {
     static float persisted_bme_pa;
     static float persisted_bme_altim;
     static float persisted_bme_altift;
+    static float persisted_bme_dewpointc;
 
     float BmeTempC = mySensor.readTempC();
     float BmeTempF = mySensor.readTempF();
@@ -137,9 +138,10 @@ void MeasureTempHumAndPressure() {
     float BmePa = mySensor.readFloatPressure();
     float BmeAltiM = mySensor.readFloatAltitudeMeters();
     float BmeAltiFt = mySensor.readFloatAltitudeFeet();
+    float BmeDewPointC = mySensor.dewPointC();
 
     // Check if reads failed and exit early (to try again).
-    if (isnan(BmeTempC) || isnan(BmeTempF) || isnan(BmeHum) || isnan(BmePa) || isnan(BmeAltiM) || isnan(BmeAltiFt)) {
+    if (isnan(BmeTempC) || isnan(BmeTempF) || isnan(BmeHum) || isnan(BmePa) || isnan(BmeAltiM) || isnan(BmeAltiFt) || isnan(BmeDewPointC)) {
       Log.error(F("Failed to read from BME280/BMP280!" CR));
     } else {
       Log.trace(F("Creating BME280/BMP280 buffer" CR));
@@ -187,6 +189,13 @@ void MeasureTempHumAndPressure() {
       } else {
         Log.trace(F("Same Altitude Feet don't send it" CR));
       }
+
+      // Generate Dew Point in degrees C
+      if (BmeDewPointC != persisted_bme_dewpointc || bme280_always) {
+        BME280data["dewpointc"] = (float)BmeDewPointC;
+      } else {
+        Log.trace(F("Same Dew Point C don't send it" CR));
+      }
       BME280data["origin"] = BMETOPIC;
       enqueueJsonObject(BME280data);
     }
@@ -194,6 +203,7 @@ void MeasureTempHumAndPressure() {
     persisted_bme_tempc = BmeTempC;
     persisted_bme_tempf = BmeTempF;
     persisted_bme_hum = BmeHum;
+    persisted_bme_dewpointc = BmeDewPointC;
     persisted_bme_pa = BmePa;
     persisted_bme_altim = BmeAltiM;
     persisted_bme_altift = BmeAltiFt;
